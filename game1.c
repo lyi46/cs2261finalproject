@@ -47,8 +47,8 @@ void drawGame1(){
 void initPlayer(){
     player.width = 16;
     player.height = 32;
-    player.x = 30;
-    player.y = 30;
+    player.x = 45;
+    player.y = 420;
     player.numFrames = 3;
     player.timeUntilNextFrame = 10;
     player.xVel = 3;
@@ -64,6 +64,7 @@ void updatePlayer() {
     int rightX = player.x + player.width - 1;
     int topY = player.y;
     int bottomY = player.y + player.height - 1;
+    player.isAnimating = 0;
 
 
     if (BUTTON_HELD(BUTTON_UP) && player.y > 0) {
@@ -94,6 +95,9 @@ void updatePlayer() {
     }
     if (hOff < 0) {
         hOff = 0;
+    }
+    if (collision(player.x, player.y, player.width, player.height, 30, 300, 30, 30)) {
+        intro = 1;
     }
 }
 

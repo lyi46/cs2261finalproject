@@ -12,7 +12,7 @@
 
 unsigned short colors[8] = {RED, BROWN, BLUE, LIGHTBROWN, LIGHTBLUE, MAGENTA, WHITE, BLACK};
 
-enum {START, GAME1, INST, PAUSE};
+enum {START, GAME1, GAME2, INST, PAUSE};
 int state;
 void initialize(); void update(); void draw(); 
 void startframe(); void start(); void game1(); void game1frame();
@@ -57,6 +57,14 @@ int main() {
                     state = PAUSE;
                 }
                 break;
+            case GAME2:
+                game2();
+                if (BUTTON_PRESSED(BUTTON_START)) {
+                    prevstate = GAME2;
+                    initialize0();
+                    pauseframe();
+                    state = PAUSE;
+                }
             case PAUSE:
                 pause();
                 if (BUTTON_PRESSED(BUTTON_START)) {
@@ -132,6 +140,7 @@ void game1frame() {
     DMANow(3, chiriroTiles, &CHARBLOCK[4], chiriroTilesLen/2);
     DMANow(3, chiriroPal, SPRITE_PAL, chiriroPalLen/2);
     hideSprites();
+    DMANow(3, shadowOAM, OAM, 512);
 
     hOff = 0;
     vOff = 0;
@@ -144,6 +153,23 @@ void game1() {
     waitForVBlank();
     drawGame1();
     DMANow(3, shadowOAM, OAM, 128*4);
+    if (BUTTON_PRESSED(BUTTON_START)) {
+        pauseframe();
+        return;
+    }
+    if (intro == 1) {
+        bhframe();
+        return;
+    }
+}
+
+void game2frame() {
+    //nothingyet
+}
+
+void game2() {
+    //nothingyet
+    waitForVBlank();
     if (BUTTON_PRESSED(BUTTON_START)) {
         pauseframe();
         return;
