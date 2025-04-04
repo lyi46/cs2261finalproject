@@ -4,6 +4,7 @@
 #include "sprites.h"
 #include "game2.h"
 #include "chiriro.h"
+#include "bathhouse.h"
 
 int hOff;
 int vOff;
@@ -99,12 +100,12 @@ void updatePlayer2() {
     if (vOff < 0) {
         vOff = 0;
     }
-    if (hOff > MAPWIDTH - SCREENWIDTH) {
-        hOff = MAPWIDTH - SCREENWIDTH;
-    }
-    if (hOff < 0) {
-        hOff = 0;
-    }
+    // if (hOff > MAPWIDTH - SCREENWIDTH) {
+    //     hOff = MAPWIDTH - SCREENWIDTH;
+    // }
+    // if (hOff < 0) {
+    //     hOff = 0;
+    // }
 }
 
 

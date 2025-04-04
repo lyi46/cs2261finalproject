@@ -12,6 +12,7 @@ int vOff;
 SPRITE player;
 typedef enum {RIGHT, LEFT} DIRECTION;
 OBJ_ATTR shadowOAM[128];
+int intro;
 
 
 inline unsigned char colorAt(int x, int y){
@@ -107,6 +108,8 @@ void drawPlayer() {
     shadowOAM[0].attr0 = ATTR0_Y(player.y - vOff) | ATTR0_TALL | ATTR0_4BPP;
     shadowOAM[0].attr1 = ATTR1_X(player.x - hOff) | ATTR1_MEDIUM;
     shadowOAM[0].attr2 = ATTR2_TILEID(0, 0) | ATTR2_PALROW(0); 
+    shadowOAM[player.oamIndex].attr0=ATTR0_Y(player.y - vOff) | ATTR0_TALL;
+    shadowOAM[player.oamIndex].attr1=ATTR1_X(player.x - hOff) | ATTR1_MEDIUM;
 
     REG_BG0HOFF = hOff;
     REG_BG0VOFF = vOff;
