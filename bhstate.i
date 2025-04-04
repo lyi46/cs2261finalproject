@@ -1314,15 +1314,7 @@ extern unsigned short colors[8];
 void initbh();
 void bhstate();
 # 9 "bhstate.c" 2
-# 1 "soot.h" 1
-# 21 "soot.h"
-extern const unsigned short sootBitmap[512];
 
-
-extern const unsigned short sootPal[256];
-# 10 "bhstate.c" 2
-# 1 "sprites.h" 1
-# 10 "sprites.h"
 typedef struct {
   u16 attr0;
   u16 attr1;
@@ -1383,32 +1375,18 @@ typedef struct {
 } SPRITE;
 # 11 "bhstate.c" 2
 
-SPRITE soot;
 int intro;
 
 void initbh() {
-    initsoot();
     (*(volatile unsigned short *)0x4000000) = ((4) & 7) | (1 << (8 + (2 % 4))) | (1 << 4);
     DMANow(3, bhPal, ((unsigned short *)0x5000000), 200);
 }
 
-void initsoot() {
-    soot.x = 40; soot.y = 120; soot.xVel = -1; soot.width = 15; soot.height = 15;
-}
 
 void drawbh() {
     drawFullscreenImage4(bhBitmap);
-    drawsoot();
 }
 
-void drawsoot() {
-    drawCircle4(soot.x, soot.y, soot.width, 0);
-    drawCircle4(35, 120, 4, 199);
-    drawCircle4(34, 121, 4, 199);
-    drawCircle4(47, 120, 4, 199);
-    drawCircle4(48, 121, 4, 199);
-
-}
 
 
 void bhstate() {
