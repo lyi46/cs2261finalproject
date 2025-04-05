@@ -9,6 +9,8 @@
 #include "tileset.h"
 #include "start.h"
 #include "pause.h"
+#include "bh.h"
+#include "bathhouse.h"
 
 unsigned short colors[8] = {RED, BROWN, BLUE, LIGHTBROWN, LIGHTBLUE, MAGENTA, WHITE, BLACK};
 
@@ -55,6 +57,21 @@ int main() {
                     initialize4();
                     pauseframe();
                     state = PAUSE;
+                }
+                break;
+            case BH:
+                bh();
+                if (BUTTON_PRESSED(BUTTON_START)) {
+                    prevstate = BH;
+                    initialize0();
+                    pauseframe();
+                    state = PAUSE;
+                }
+                if (BUTTON_PRESSED(BUTTON_SELECT)) {
+                    prevstate = BH;
+                    initialize0();
+                    game2frame();
+                    state = GAME2;
                 }
                 break;
             case GAME2:
@@ -163,17 +180,51 @@ void game1() {
     }
 }
 
+void bhframe() {
+    bhstate();
+    waitForVBlank();
+    flipPages();
+    state = BH;
+    if (BUTTON_PRESSED(BUTTON_SELECT)) {
+        game2frame();
+        initGame2();
+    }
+}
+
+void bh() {
+    waitForVBlank();
+}
+
 void game2frame() {
-    //nothingyet
+    initialize0();
+
+    REG_BG0CNT = BG_CHARBLOCK(0) | BG_SCREENBLOCK(27) | BG_SIZE_LARGE | BG_8BPP;
+    DMANow(3, tilesetTiles, &CHARBLOCK[0], tilesetTilesLen/2);
+    DMANow(3, bathhouseMap, &SCREENBLOCK[27], bathhouseMapLen/2);
+    DMANow(3, tilesetPal, BG_PALETTE, 256);
+
+    // Loading sprites into appropriate place in memory
+    DMANow(3, chiriroTiles, &CHARBLOCK[4], chiriroTilesLen/2);
+    DMANow(3, chiriroPal, SPRITE_PAL, 256);
+    hideSprites();
+    DMANow(3, shadowOAM, OAM, 512);
+
+    hOff = 0;
+    vOff = 0;
+    initGame2();
+    state = GAME2;
 }
 
 void game2() {
-    //nothingyet
+    updateGame2();
     waitForVBlank();
+    drawGame2();
+    DMANow(3, shadowOAM, OAM, 128*4);
     if (BUTTON_PRESSED(BUTTON_START)) {
         pauseframe();
         return;
     }
+
 }
 
 void pauseframe() {
