@@ -51,6 +51,16 @@ void initPlayer2(){
     player.active = 1;
 }
 
+void drawPlayer2() {
+    shadowOAM[0].attr0 = ATTR0_Y(player.y - vOff) | ATTR0_TALL | ATTR0_4BPP | ATTR0_REGULAR;
+    shadowOAM[0].attr1 = ATTR1_X(player.x - hOff) | ATTR1_MEDIUM | (player.direction == LEFT ? ATTR1_HFLIP : 0);
+    shadowOAM[0].attr2 = ATTR2_TILEID(player.direction * 2, player.currentFrame * 4);
+    shadowOAM[player.oamIndex].attr0=ATTR0_Y(player.y - vOff) | ATTR0_TALL;
+    shadowOAM[player.oamIndex].attr1=ATTR1_X(player.x - hOff) | ATTR1_MEDIUM;
+
+    REG_BG0HOFF = 0;
+    REG_BG0VOFF = vOff;
+}
 
 // Handle every-frame actions of player
 void updatePlayer2() {
@@ -100,23 +110,7 @@ void updatePlayer2() {
     if (vOff < 0) {
         vOff = 0;
     }
-    // if (hOff > MAPWIDTH - SCREENWIDTH) {
-    //     hOff = MAPWIDTH - SCREENWIDTH;
-    // }
-    // if (hOff < 0) {
-    //     hOff = 0;
-    // }
-}
-
-
-// Draw player
-void drawPlayer2() {
-    shadowOAM[0].attr0 = ATTR0_Y(player.y - vOff) | ATTR0_TALL | ATTR0_4BPP | ATTR0_REGULAR;
-    shadowOAM[0].attr1 = ATTR1_X(player.x - hOff) | ATTR1_MEDIUM | (player.direction == LEFT ? ATTR1_HFLIP : 0);
-    shadowOAM[0].attr2 = ATTR2_TILEID(player.direction * 2, player.currentFrame * 4);
-    shadowOAM[player.oamIndex].attr0=ATTR0_Y(player.y - vOff) | ATTR0_TALL;
-    shadowOAM[player.oamIndex].attr1=ATTR1_X(player.x - hOff) | ATTR1_MEDIUM;
-
-    REG_BG0HOFF = hOff;
-    REG_BG0VOFF = vOff;
+    if (collision(player.x, player.y, player.width, player.height, 105, 500, 30, 30)) {
+        intro = 3;
+    }
 }

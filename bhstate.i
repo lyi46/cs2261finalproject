@@ -45,14 +45,17 @@ typedef volatile struct {
 # 113 "gba.h"
 void DMANow(int channel, volatile void *src, volatile void *dest, unsigned int ctrl);
 # 3 "bhstate.c" 2
-# 1 "mode4.h" 1
-# 9 "mode4.h"
-void flipPages();
-void setPixel4(int x, int y, unsigned char colorIndex);
-void drawRect4(int x, int y, int width, int height, volatile unsigned char colorIndex);
-void fillScreen4(volatile unsigned char colorIndex);
-void drawImage4(int x, int y, int width, int height, const unsigned short *image);
-void drawFullscreenImage4(const unsigned short *image);
+# 1 "mode0.h" 1
+# 32 "mode0.h"
+typedef struct {
+ u16 tileimg[8192];
+} CB;
+
+
+
+typedef struct {
+ u16 tilemap[1024];
+} SB;
 # 4 "bhstate.c" 2
 # 1 "print.h" 1
 # 25 "print.h"
@@ -1296,14 +1299,17 @@ _putchar_unlocked(int _c)
 # 797 "/opt/devkitpro/devkitARM/arm-none-eabi/include/stdio.h" 3
 
 # 7 "bhstate.c" 2
-# 1 "bh.h" 1
-# 21 "bh.h"
-
-# 21 "bh.h"
-extern const unsigned short bhBitmap[19200];
+# 1 "bhtm.h" 1
 
 
-extern const unsigned short bhPal[256];
+
+
+
+
+
+
+# 8 "bhtm.h"
+extern const unsigned short bhtmMap[1024];
 # 8 "bhstate.c" 2
 # 1 "bhstate.h" 1
 
@@ -1314,7 +1320,8 @@ extern unsigned short colors[8];
 void initbh();
 void bhstate();
 # 9 "bhstate.c" 2
-
+# 1 "sprites.h" 1
+# 10 "sprites.h"
 typedef struct {
   u16 attr0;
   u16 attr1;
@@ -1373,36 +1380,153 @@ typedef struct {
   u8 oamIndex;
   int active;
 } SPRITE;
-# 11 "bhstate.c" 2
+# 10 "bhstate.c" 2
+
+SPRITE player;
+SPRITE haku;
+SPRITE duck;
+typedef enum {DOWN, UP, LEFT, RIGHT} DIRECTION;
 
 int intro;
+int hOff;
+int vOff;
+int bhsw = 240;
+int bhsh = 136;
 
 void initbh() {
-    (*(volatile unsigned short *)0x4000000) = ((4) & 7) | (1 << (8 + (2 % 4))) | (1 << 4);
-    DMANow(3, bhPal, ((unsigned short *)0x5000000), 200);
-}
+    DMANow(3, shadowOAM, ((OBJ_ATTR*)(0x7000000)), 128*4);
 
+
+    initPlayerbh();
+    inithaku();
+    initduck();
+    hOff = 0;
+    vOff = 0;
+}
 
 void drawbh() {
-    drawFullscreenImage4(bhBitmap);
+    hideSprites();
+    drawPlayerbh();
+    drawhaku();
+    drawduck();
+    waitForVBlank();
+    DMANow(3, shadowOAM, ((OBJ_ATTR*)(0x7000000)), 128*4);
+}
+
+void updatebh(){
+    updatePlayerbh();
+}
+
+void initPlayerbh(){
+    player.width = 16;
+    player.height = 32;
+    player.x = 110;
+    player.y = 104;
+    player.numFrames = 3;
+    player.timeUntilNextFrame = 10;
+    player.xVel = 3;
+    player.yVel = 3;
+    player.oamIndex = 0;
+    player.active = 1;
+}
+
+void drawPlayerbh() {
+    shadowOAM[0].attr0 = ((player.y - vOff) & 0xFF) | (2<<14) | (0<<13) | (0<<8);
+    shadowOAM[0].attr1 = ((player.x - hOff) & 0x1FF) | (2<<14) | (player.direction == LEFT ? (1<<12) : 0);
+    shadowOAM[0].attr2 = ((((player.currentFrame * 4) * (32) + (player.direction * 2))) & 0x3FF);
+    shadowOAM[player.oamIndex].attr0=((player.y - vOff) & 0xFF) | (2<<14);
+    shadowOAM[player.oamIndex].attr1=((player.x - hOff) & 0x1FF) | (2<<14);
+
+    (*(volatile unsigned short*) 0x04000010) = hOff;
+    (*(volatile unsigned short*) 0x04000012) = vOff;
+}
+
+void updatePlayerbh() {
+    player.isAnimating = 0;
+
+
+    if ((~(buttons) & ((1<<6))) && player.y > 0) {
+        player.y -= player.yVel;
+        player.isAnimating = 1;
+        player.direction = UP;
+    }
+
+
+    if ((~(buttons) & ((1<<7))) && player.y + player.height < bhsh) {
+        player.y += player.yVel;
+        player.isAnimating = 1;
+        player.direction = DOWN;
+    }
+
+
+    if ((~(buttons) & ((1<<5))) && player.x > 0) {
+        player.x -= player.xVel;
+        player.isAnimating = 1;
+        player.direction = LEFT;
+    }
+
+
+    if ((~(buttons) & ((1<<4))) && player.x + player.width < bhsw) {
+        player.x += player.xVel;
+        player.isAnimating = 1;
+        player.direction = RIGHT;
+    }
+
+
+    if (player.isAnimating) {
+        player.timeUntilNextFrame--;
+        if (player.timeUntilNextFrame == 0) {
+            player.currentFrame = (player.currentFrame + 1) % player.numFrames;
+            player.timeUntilNextFrame = 10;
+        }
+    } else {
+        player.currentFrame = 0;
+    }
+    if (collision(player.x, player.y, player.width, player.height, 100, 10, 40, 60)) {
+        intro = 2;
+    }
 }
 
 
+void inithaku() {
+    haku.width = 16;
+    haku.height = 32;
+    haku.x = 60;
+    haku.y = 70;
+    haku.numFrames = 3;
+    haku.timeUntilNextFrame = 10;
+    haku.oamIndex = 1;
+    haku.active = 1;
+}
+void drawhaku() {
+    shadowOAM[1].attr0 = ((haku.y - vOff) & 0xFF) | (2<<14) | (0<<13) | (0<<8);
+    shadowOAM[1].attr1 = ((haku.x - hOff) & 0x1FF) | (2<<14) | (haku.direction == LEFT ? (1<<12) : 0);
+    shadowOAM[1].attr2 = ((((12) * (32) + (0))) & 0x3FF);
+    shadowOAM[haku.oamIndex].attr0=((haku.y - vOff) & 0xFF) | (2<<14);
+    shadowOAM[haku.oamIndex].attr1=((haku.x - hOff) & 0x1FF) | (2<<14);
 
-void bhstate() {
-    initbh();
+    (*(volatile unsigned short*) 0x04000010) = hOff;
+    (*(volatile unsigned short*) 0x04000012) = vOff;
+}
 
-    while (1) {
-        oldButtons = buttons;
-        buttons = (*(volatile unsigned short *)0x04000130);
-        drawbh();
-        waitForVBlank();
-        flipPages();
-        if ((!(~(oldButtons) & ((1<<3))) && (~(buttons) & ((1<<3))))) {
-            break;
-        }
-        if ((!(~(oldButtons) & ((1<<2))) && (~(buttons) & ((1<<2))))) {
-            intro = 2;
-        }
-    }
+void initduck() {
+    duck.width = 16;
+    duck.height = 32;
+    duck.x = 150;
+    duck.y = 70;
+    duck.numFrames = 3;
+    duck.timeUntilNextFrame = 10;
+    duck.oamIndex = 2;
+    duck.active = 1;
+}
+
+void drawduck() {
+    shadowOAM[2].attr0 = ((duck.y - vOff) & 0xFF) | (2<<14) | (0<<13) | (0<<8);
+    shadowOAM[2].attr1 = ((duck.x - hOff) & 0x1FF) | (2<<14) | (duck.direction == LEFT ? (1<<12) : 0);
+    shadowOAM[2].attr2 = ((((12) * (32) + (2))) & 0x3FF);
+    shadowOAM[duck.oamIndex].attr0=((duck.y - vOff) & 0xFF) | (2<<14);
+    shadowOAM[duck.oamIndex].attr1=((duck.x - hOff) & 0x1FF) | (2<<14);
+
+    (*(volatile unsigned short*) 0x04000010) = hOff;
+    (*(volatile unsigned short*) 0x04000012) = vOff;
 }

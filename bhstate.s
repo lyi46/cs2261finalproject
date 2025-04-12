@@ -47,14 +47,92 @@ initbh:
 .L5:
 	.align	2
 .L4:
+	.word	soot
 	.word	DMANow
 	.word	bhPal
 	.size	initbh, .-initbh
 	.align	2
+	.global	initsoot
 	.syntax unified
 	.arm
 	.fpu softvfp
-
+	.type	initsoot, %function
+initsoot:
+	@ Function supports interworking.
+	@ args = 0, pretend = 0, frame = 0
+	@ frame_needed = 0, uses_anonymous_args = 0
+	@ link register save eliminated.
+	mov	r2, #15
+	mov	ip, #40
+	mov	r0, #120
+	mvn	r1, #0
+	ldr	r3, .L7
+	stmib	r3, {r0, r1}
+	str	ip, [r3]
+	str	r2, [r3, #16]
+	str	r2, [r3, #20]
+	bx	lr
+.L8:
+	.align	2
+.L7:
+	.word	soot
+	.size	initsoot, .-initsoot
+	.align	2
+	.global	drawsoot
+	.syntax unified
+	.arm
+	.fpu softvfp
+	.type	drawsoot, %function
+drawsoot:
+	@ Function supports interworking.
+	@ args = 0, pretend = 0, frame = 0
+	@ frame_needed = 0, uses_anonymous_args = 0
+	ldr	r0, .L11
+	push	{r4, lr}
+	ldr	r2, [r0, #16]
+	ldr	r4, .L11+4
+	mov	r3, #0
+	ldm	r0, {r0, r1}
+	mov	lr, pc
+	bx	r4
+	mov	r3, #199
+	mov	r2, #4
+	mov	r1, #120
+	mov	r0, #35
+	mov	lr, pc
+	bx	r4
+	mov	r3, #199
+	mov	r2, #4
+	mov	r1, #121
+	mov	r0, #34
+	mov	lr, pc
+	bx	r4
+	mov	r3, #199
+	mov	r2, #4
+	mov	r1, #120
+	mov	r0, #47
+	mov	lr, pc
+	bx	r4
+	mov	r3, #199
+	mov	r2, #4
+	mov	r1, #121
+	mov	r0, #48
+	mov	lr, pc
+	bx	r4
+	pop	{r4, lr}
+	bx	lr
+.L12:
+	.align	2
+.L11:
+	.word	soot
+	.word	drawCircle4
+	.size	drawsoot, .-drawsoot
+	.align	2
+	.global	drawbh
+	.syntax unified
+	.arm
+	.fpu softvfp
+	.type	drawbh, %function
 drawbh:
 	@ Function supports interworking.
 	@ args = 0, pretend = 0, frame = 0
@@ -65,6 +143,7 @@ drawbh:
 	mov	lr, pc
 	bx	r3
 	pop	{r4, lr}
+	b	drawsoot
 .L16:
 	.align	2
 .L15:
@@ -99,6 +178,7 @@ bhstate:
 	strh	r3, [r10]	@ movhi
 	mov	lr, pc
 	bx	r8
+	bl	drawsoot
 	mov	lr, pc
 	bx	r7
 	mov	lr, pc
@@ -132,4 +212,5 @@ bhstate:
 	.word	intro
 	.size	bhstate, .-bhstate
 	.comm	intro,4,4
+	.comm	soot,52,4
 	.ident	"GCC: (devkitARM release 53) 9.1.0"

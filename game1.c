@@ -20,13 +20,7 @@ inline unsigned char colorAt(int x, int y){
 }
 
 void initGame1(){
-    
-    // Load sprite tiles and palette
-    DMANow(3, chiriroTiles, &CHARBLOCK[4], chiriroTilesLen/2);
-    DMANow(3, chiriroPal, SPRITE_PAL, chiriroPalLen/2);
-    hideSprites();
     DMANow(3, shadowOAM, OAM, 128*4);
-
     
     initPlayer();
     hOff = 0;

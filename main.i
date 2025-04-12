@@ -22,13 +22,14 @@ typedef void (*ihp)(void);
 
 
 
+
 extern volatile unsigned short *videoBuffer;
-# 44 "gba.h"
+# 45 "gba.h"
 int collision(int x1, int y1, int width1, int height1, int x2, int y2, int width2, int height2);
 
 
 void waitForVBlank();
-# 78 "gba.h"
+# 79 "gba.h"
 extern unsigned short oldButtons;
 extern unsigned short buttons;
 
@@ -40,7 +41,7 @@ typedef volatile struct {
     volatile void* dest;
     unsigned int ctrl;
 } DMAChannel;
-# 112 "gba.h"
+# 113 "gba.h"
 void DMANow(int channel, volatile void *src, volatile void *dest, unsigned int ctrl);
 # 2 "main.c" 2
 # 1 "mode0.h" 1
@@ -76,7 +77,36 @@ typedef struct {
 
 
 extern OBJ_ATTR shadowOAM[128];
-# 64 "sprites.h"
+
+struct attr0 {
+  u16 regular;
+  u16 affine;
+  u16 hide;
+  u16 double_affine;
+  u16 enable_alpha;
+  u16 enable_window;
+  u16 enable_mosaic;
+  u16 fourBpp;
+  u16 eightBpp;
+  u16 square;
+  u16 wide;
+  u16 tall;
+};
+
+struct attr1 {
+  u16 hflip;
+  u16 vflip;
+  u16 tiny;
+  u16 small;
+  u16 medium;
+  u16 large;
+};
+
+struct oam_attrs {
+  struct attr0 attr0;
+  struct attr1 attr1;
+};
+# 93 "sprites.h"
 void hideSprites();
 
 
@@ -316,13 +346,25 @@ void updatePlayer();
 void drawGame1();
 void drawPlayer();
 # 7 "main.c" 2
+# 1 "game2.h" 1
+# 9 "game2.h"
+void initGame2();
+void initPlayer2();
+
+
+void updateGame2();
+void updatePlayer2();
+
+void drawGame2();
+void drawPlayer2();
+# 8 "main.c" 2
 # 1 "chiriro.h" 1
 # 21 "chiriro.h"
-extern const unsigned short chiriroTiles[9408];
+extern const unsigned short chiriroTiles[16384];
 
 
 extern const unsigned short chiriroPal[256];
-# 8 "main.c" 2
+# 9 "main.c" 2
 # 1 "tilemap.h" 1
 
 
@@ -332,33 +374,82 @@ extern const unsigned short chiriroPal[256];
 
 
 extern const unsigned short tilemapMap[4096];
-# 9 "main.c" 2
+# 10 "main.c" 2
 # 1 "tileset.h" 1
 # 21 "tileset.h"
 extern const unsigned short tilesetTiles[11264];
 
 
 extern const unsigned short tilesetPal[256];
-# 10 "main.c" 2
+# 11 "main.c" 2
 # 1 "start.h" 1
 # 21 "start.h"
 extern const unsigned short startBitmap[19200];
 
 
 extern const unsigned short startPal[256];
-# 11 "main.c" 2
+# 12 "main.c" 2
 # 1 "pause.h" 1
 # 21 "pause.h"
 extern const unsigned short pauseBitmap[19200];
 
 
 extern const unsigned short pausePal[256];
-# 12 "main.c" 2
+# 13 "main.c" 2
+# 1 "bh1.h" 1
+# 21 "bh1.h"
+extern const unsigned short bh1Tiles[19200];
+
+
+extern const unsigned short bh1Pal[256];
+# 14 "main.c" 2
+# 1 "bhtm.h" 1
+
+
+
+
+
+
+
+extern const unsigned short bhtmMap[1024];
+# 15 "main.c" 2
+# 1 "maze.h" 1
+
+
+
+
+
+
+
+extern const unsigned short mazeMap[4096];
+# 16 "main.c" 2
+# 1 "bathhouse.h" 1
+
+
+
+
+
+
+
+extern const unsigned short bathhouseMap[2048];
+# 17 "main.c" 2
+# 1 "train.h" 1
+
+
+
+
+
+
+
+extern const unsigned short trainMap[2048];
+# 18 "main.c" 2
+
 
 unsigned short colors[8] = {(((31) & 31) | ((0) & 31) << 5 | ((0) & 31) << 10), (((20) & 31) | ((13) & 31) << 5 | ((10) & 31) << 10), (((0) & 31) | ((0) & 31) << 5 | ((31) & 31) << 10), (((28) & 31) | ((22) & 31) << 5 | ((18) & 31) << 10), (((15) & 31) | ((15) & 31) << 5 | ((31) & 31) << 10), (((31) & 31) | ((0) & 31) << 5 | ((31) & 31) << 10), (((31) & 31) | ((31) & 31) << 5 | ((31) & 31) << 10), (((0) & 31) | ((0) & 31) << 5 | ((0) & 31) << 10)};
 
-enum {START, GAME1, INST, PAUSE};
-int state;
+enum {START, GAME1, BH, GAME2, GAME3, GAME4, INST, PAUSE};
+int state; int prevstate;
+int intro = 0;
 void initialize(); void update(); void draw();
 void startframe(); void start(); void game1(); void game1frame();
 int hOff; int vOff; int rSeed;
@@ -371,6 +462,7 @@ int main() {
     state = START;
 
     while (1) {
+        mgba_printf("State: %d\n", state);
         oldButtons = buttons;
         buttons = (*(volatile unsigned short *)0x04000130);
         switch (state) {
@@ -397,17 +489,66 @@ int main() {
                     state = START;
                 }
                 if ((!(~(oldButtons) & ((1<<3))) && (~(buttons) & ((1<<3))))) {
+                    prevstate = GAME1;
                     initialize4();
                     pauseframe();
                     state = PAUSE;
                 }
                 break;
+            case BH:
+                bh();
+                if ((!(~(oldButtons) & ((1<<2))) && (~(buttons) & ((1<<2))))) {
+                    initialize4();
+                    state = START;
+                }
+                if ((!(~(oldButtons) & ((1<<3))) && (~(buttons) & ((1<<3))))) {
+                    prevstate = BH;
+                    initialize4();
+                    pauseframe();
+                    state = PAUSE;
+                }
+                break;
+            case GAME2:
+                game2();
+                if ((!(~(oldButtons) & ((1<<2))) && (~(buttons) & ((1<<2))))) {
+                    initialize4();
+                    state = START;
+                }
+                if ((!(~(oldButtons) & ((1<<3))) && (~(buttons) & ((1<<3))))) {
+                    prevstate = GAME2;
+                    initialize4();
+                    pauseframe();
+                    state = PAUSE;
+                }
+            case GAME3:
+                game3();
+                if ((!(~(oldButtons) & ((1<<2))) && (~(buttons) & ((1<<2))))) {
+                    initialize4();
+                    state = START;
+                }
+                if ((!(~(oldButtons) & ((1<<3))) && (~(buttons) & ((1<<3))))) {
+                    prevstate = GAME3;
+                    initialize4();
+                    pauseframe();
+                    state = PAUSE;
+                }
+            case GAME4:
+                game4();
+                if ((!(~(oldButtons) & ((1<<2))) && (~(buttons) & ((1<<2))))) {
+                    initialize4();
+                    state = START;
+                }
+                if ((!(~(oldButtons) & ((1<<3))) && (~(buttons) & ((1<<3))))) {
+                    prevstate = GAME4;
+                    initialize4();
+                    pauseframe();
+                    state = PAUSE;
+                }
             case PAUSE:
                 pause();
                 if ((!(~(oldButtons) & ((1<<3))) && (~(buttons) & ((1<<3))))) {
                     initialize0();
-                    game1frame();
-                    state = GAME1;
+                    state = prevstate;
                 }
                 break;
         }
@@ -428,7 +569,8 @@ void initialize4() {
 void initialize0() {
     mgba_open();
     (*(volatile unsigned short *)0x4000000)= ((0) & 7) | (1 << (8 + (0 % 4))) | (1 << 12);
-    (*(volatile unsigned short*) 0x4000008) = ((0) << 2) | ((27) << 8) | (3 << 14) | (1 << 7);
+
+
     buttons = (*(volatile unsigned short *)0x04000130);
     oldButtons = 0;
 }
@@ -474,9 +616,10 @@ void game1frame() {
     DMANow(3, tilesetPal, ((unsigned short *)0x5000000), 256);
 
 
-    DMANow(3, chiriroTiles, &((CB*) 0x6000000)[4], 18816/2);
-    DMANow(3, chiriroPal, ((u16 *)0x5000200), 512/2);
+    DMANow(3, chiriroTiles, &((CB*) 0x6000000)[4], 32768/2);
+    DMANow(3, chiriroPal, ((u16 *)0x5000200), 256);
     hideSprites();
+    DMANow(3, shadowOAM, ((OBJ_ATTR*)(0x7000000)), 512);
 
     hOff = 0;
     vOff = 0;
@@ -493,6 +636,153 @@ void game1() {
         pauseframe();
         return;
     }
+    if (intro == 1) {
+        bhframe();
+        return;
+    }
+    if (intro == 5) {
+        game4frame();
+        return;
+    }
+}
+
+void bhframe() {
+    initialize0();
+
+    (*(volatile unsigned short*) 0x4000008) = ((0) << 2) | ((27) << 8) | (3 << 14) | (1 << 7);
+    DMANow(3, bh1Tiles, &((CB*) 0x6000000)[0], 38400/2);
+    DMANow(3, bhtmMap, &((SB*) 0x6000000)[27], (2048)/2);
+    DMANow(3, bh1Pal, ((unsigned short *)0x5000000), 256);
+
+
+    DMANow(3, chiriroTiles, &((CB*) 0x6000000)[4], 32768/2);
+    DMANow(3, chiriroPal, ((u16 *)0x5000200), 256);
+    hideSprites();
+    DMANow(3, shadowOAM, ((OBJ_ATTR*)(0x7000000)), 512);
+
+    hOff = 0;
+    vOff = 0;
+    initbh();
+    state = BH;
+}
+
+void bh() {
+    updatebh();
+    waitForVBlank();
+    drawbh();
+    DMANow(3, shadowOAM, ((OBJ_ATTR*)(0x7000000)), 128*4);
+    if ((!(~(oldButtons) & ((1<<3))) && (~(buttons) & ((1<<3))))) {
+        pauseframe();
+        return;
+    }
+    if (intro == 2) {
+        game2frame();
+        return;
+    }
+}
+
+void game2frame() {
+    initialize0();
+
+    (*(volatile unsigned short*) 0x4000008) = ((0) << 2) | ((20) << 8) | (2 << 14) | (1 << 7);
+    DMANow(3, tilesetTiles, &((CB*) 0x6000000)[0], 22528/2);
+    DMANow(3, bathhouseMap, &((SB*) 0x6000000)[20], (4096)/2);
+    DMANow(3, tilesetPal, ((unsigned short *)0x5000000), 256);
+
+
+    DMANow(3, chiriroTiles, &((CB*) 0x6000000)[4], 32768/2);
+    DMANow(3, chiriroPal, ((u16 *)0x5000200), 256);
+    hideSprites();
+    DMANow(3, shadowOAM, ((OBJ_ATTR*)(0x7000000)), 512);
+
+    hOff = 0;
+    vOff = 0;
+    initGame2();
+    state = GAME2;
+}
+
+void game2() {
+    updateGame2();
+    waitForVBlank();
+    drawGame2();
+    DMANow(3, shadowOAM, ((OBJ_ATTR*)(0x7000000)), 128*4);
+    if ((!(~(oldButtons) & ((1<<3))) && (~(buttons) & ((1<<3))))) {
+        pauseframe();
+        return;
+    }
+    if (intro == 3) {
+        game3frame();
+        return;
+    }
+}
+
+void game3frame() {
+    initialize0();
+
+    (*(volatile unsigned short*) 0x4000008) = ((0) << 2) | ((22) << 8) | (3 << 14) | (1 << 7);
+    DMANow(3, tilesetTiles, &((CB*) 0x6000000)[0], 22528/2);
+    DMANow(3, mazeMap, &((SB*) 0x6000000)[22], (8192)/2);
+    DMANow(3, tilesetPal, ((unsigned short *)0x5000000), 256);
+
+
+    DMANow(3, chiriroTiles, &((CB*) 0x6000000)[4], 32768/2);
+    DMANow(3, chiriroPal, ((u16 *)0x5000200), 256);
+    hideSprites();
+    DMANow(3, shadowOAM, ((OBJ_ATTR*)(0x7000000)), 512);
+
+    hOff = 0;
+    vOff = 0;
+    initGame3();
+    state = GAME3;
+}
+
+void game3() {
+    updateGame3();
+    waitForVBlank();
+    drawGame3();
+    DMANow(3, shadowOAM, ((OBJ_ATTR*)(0x7000000)), 128*4);
+    if ((!(~(oldButtons) & ((1<<3))) && (~(buttons) & ((1<<3))))) {
+        pauseframe();
+        return;
+    }
+    if (intro == 4) {
+        game1frame();
+        return;
+    }
+}
+
+void game4frame() {
+    initialize0();
+
+    (*(volatile unsigned short*) 0x4000008) = ((0) << 2) | ((30) << 8) | (3 << 14) | (1 << 7);
+    DMANow(3, tilesetTiles, &((CB*) 0x6000000)[0], 22528/2);
+    DMANow(3, trainMap, &((SB*) 0x6000000)[30], (4096)/2);
+    DMANow(3, tilesetPal, ((unsigned short *)0x5000000), 256);
+
+
+    DMANow(3, chiriroTiles, &((CB*) 0x6000000)[4], 32768/2);
+    DMANow(3, chiriroPal, ((u16 *)0x5000200), 256);
+
+
+    hideSprites();
+    DMANow(3, shadowOAM, ((OBJ_ATTR*)(0x7000000)), 512);
+
+    hOff = 0;
+    vOff = 0;
+    initGame4();
+    state = GAME4;
+}
+
+void game4() {
+    updateGame4();
+    waitForVBlank();
+    drawGame4();
+    DMANow(3, shadowOAM, ((OBJ_ATTR*)(0x7000000)), 128*4);
+    if ((!(~(oldButtons) & ((1<<3))) && (~(buttons) & ((1<<3))))) {
+        pauseframe();
+        return;
+    }
+
 }
 
 void pauseframe() {

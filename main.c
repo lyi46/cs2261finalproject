@@ -9,6 +9,8 @@
 #include "tileset.h"
 #include "start.h"
 #include "pause.h"
+#include "bh1.h"
+#include "bhtm.h"
 #include "bh.h"
 #include "bathhouse.h"
 
@@ -181,18 +183,25 @@ void game1() {
 }
 
 void bhframe() {
+    initialize0();
+
+    REG_BG0CNT = BG_CHARBLOCK(0) | BG_SCREENBLOCK(27) | BG_SIZE_LARGE | BG_8BPP;
+    DMANow(3, bh1Tiles, &CHARBLOCK[0], bh1TilesLen/2);
+    DMANow(3, bhtmMap, &SCREENBLOCK[27], bhtmMapLen/2);
+    DMANow(3, bh1Pal, BG_PALETTE, 256);
+
     bhstate();
     waitForVBlank();
     flipPages();
     state = BH;
-    if (BUTTON_PRESSED(BUTTON_SELECT)) {
-        game2frame();
-        initGame2();
-    }
 }
 
 void bh() {
     waitForVBlank();
+    if (BUTTON_PRESSED(BUTTON_SELECT)) {
+        game2frame();
+        initGame2();
+    }
 }
 
 void game2frame() {
