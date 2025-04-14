@@ -4,6 +4,7 @@
 #include "sprites.h"
 #include "print.h"
 #include "game1.h"
+#include "game2.h"
 #include "chiriro.h"
 #include "tilemap.h"
 #include "tileset.h"
@@ -11,14 +12,15 @@
 #include "pause.h"
 #include "bh1.h"
 #include "bhtm.h"
-#include "bh.h"
 #include "maze.h"
 #include "bathhouse.h"
 #include "train.h"
+#include "analogSound.h"
+
 
 unsigned short colors[8] = {RED, BROWN, BLUE, LIGHTBROWN, LIGHTBLUE, MAGENTA, WHITE, BLACK};
 
-enum {START, GAME1, GAME2, GAME3, INST, PAUSE};
+enum {START, GAME1, BH, GAME2, GAME3, GAME4, INST, PAUSE};
 int state; int prevstate;
 int intro = 0;
 void initialize(); void update(); void draw(); 
@@ -33,6 +35,7 @@ int main() {
     state = START; // Set the initial state
 
     while (1) {
+        mgba_printf("State: %d\n", state);
         oldButtons = buttons;
         buttons = REG_BUTTONS;
         switch (state) {
@@ -102,12 +105,23 @@ int main() {
                     pauseframe();
                     state = PAUSE;
                 }
+            case GAME4:
+                game4();
+                if (BUTTON_PRESSED(BUTTON_SELECT)) {
+                    initialize4();
+                    state = START; 
+                }
+                if (BUTTON_PRESSED(BUTTON_START)) {
+                    prevstate = GAME4;
+                    initialize4();
+                    pauseframe();
+                    state = PAUSE;
+                }
             case PAUSE:
                 pause();
                 if (BUTTON_PRESSED(BUTTON_START)) {
                     initialize0();
-                    game1frame();
-                    state = GAME1;
+                    state = prevstate;
                 }
                 break;
         }
@@ -128,7 +142,8 @@ void initialize4() {
 void initialize0() {
     mgba_open();
     REG_DISPCTL= MODE(0) | BG_ENABLE(0) | SPRITE_ENABLE;
-    REG_BG0CNT = BG_CHARBLOCK(0) | BG_SCREENBLOCK(27) | BG_SIZE_LARGE | BG_8BPP;
+    // REG_BG0CNT = BG_CHARBLOCK(0) | BG_SCREENBLOCK(6) | BG_SIZE_LARGE | BG_8BPP;
+    // REG_BG1CNT = BG_CHARBLOCK(0) | BG_SCREENBLOCK(30) | BG_SIZE_TALL | BG_8BPP;
     buttons = REG_BUTTONS;
     oldButtons = 0;
 }
@@ -175,7 +190,7 @@ void game1frame() {
 
     // Loading sprites into appropriate place in memory
     DMANow(3, chiriroTiles, &CHARBLOCK[4], chiriroTilesLen/2);
-    DMANow(3, chiriroPal, SPRITE_PAL, chiriroPalLen/2);
+    DMANow(3, chiriroPal, SPRITE_PAL, 256);
     hideSprites();
     DMANow(3, shadowOAM, OAM, 512);
 
@@ -198,6 +213,10 @@ void game1() {
         bhframe();
         return;
     }
+    if (intro == 5) {
+        game4frame();
+        return;
+    }
 }
 
 void bhframe() {
@@ -208,26 +227,39 @@ void bhframe() {
     DMANow(3, bhtmMap, &SCREENBLOCK[27], bhtmMapLen/2);
     DMANow(3, bh1Pal, BG_PALETTE, 256);
 
-    bhstate();
-    waitForVBlank();
-    flipPages();
+    // Loading sprites into appropriate place in memory
+    DMANow(3, chiriroTiles, &CHARBLOCK[4], chiriroTilesLen/2);
+    DMANow(3, chiriroPal, SPRITE_PAL, 256);
+    hideSprites();
+    DMANow(3, shadowOAM, OAM, 512);
+
+    hOff = 0;
+    vOff = 0;
+    initbh();
     state = BH;
 }
 
 void bh() {
+    updatebh();
     waitForVBlank();
-    if (BUTTON_PRESSED(BUTTON_SELECT)) {
+    drawbh();
+    DMANow(3, shadowOAM, OAM, 128*4);
+    if (BUTTON_PRESSED(BUTTON_START)) {
+        pauseframe();
+        return;
+    }
+    if (intro == 2) {
         game2frame();
-        initGame2();
+        return;
     }
 }
 
 void game2frame() {
     initialize0();
 
-    REG_BG0CNT = BG_CHARBLOCK(0) | BG_SCREENBLOCK(27) | BG_SIZE_LARGE | BG_8BPP;
+    REG_BG0CNT = BG_CHARBLOCK(0) | BG_SCREENBLOCK(20) | BG_SIZE_TALL | BG_8BPP;
     DMANow(3, tilesetTiles, &CHARBLOCK[0], tilesetTilesLen/2);
-    DMANow(3, bathhouseMap, &SCREENBLOCK[27], bathhouseMapLen/2);
+    DMANow(3, bathhouseMap, &SCREENBLOCK[20], bathhouseMapLen/2);
     DMANow(3, tilesetPal, BG_PALETTE, 256);
 
     // Loading sprites into appropriate place in memory
@@ -251,7 +283,10 @@ void game2() {
         pauseframe();
         return;
     }
-
+    if (intro == 3) {
+        game3frame();
+        return;
+    }
 }
 
 void game3frame() {
@@ -290,6 +325,40 @@ void game3() {
     }
 }
 
+void game4frame() {
+    initialize0();
+
+    REG_BG0CNT = BG_CHARBLOCK(0) | BG_SCREENBLOCK(30) | BG_SIZE_LARGE | BG_8BPP;
+    DMANow(3, tilesetTiles, &CHARBLOCK[0], tilesetTilesLen/2);
+    DMANow(3, trainMap, &SCREENBLOCK[30], trainMapLen/2);
+    DMANow(3, tilesetPal, BG_PALETTE, 256);
+
+    // Loading sprites into appropriate place in memory
+    DMANow(3, chiriroTiles, &CHARBLOCK[4], chiriroTilesLen/2);
+    DMANow(3, chiriroPal, SPRITE_PAL, 256);
+    // DMANow(3, enemyTiles, &CHARBLOCK[6], enemyTilesLen/2);
+    // DMANow(3, enemyPal, SPRITE_PAL, 256);
+    hideSprites();
+    DMANow(3, shadowOAM, OAM, 512);
+
+    hOff = 0;
+    vOff = 0;
+    initGame4();
+    state = GAME4;
+}
+
+void game4() {
+    updateGame4();
+    waitForVBlank();
+    drawGame4();
+    DMANow(3, shadowOAM, OAM, 128*4);
+    if (BUTTON_PRESSED(BUTTON_START)) {
+        pauseframe();
+        return;
+    }
+
+}
+
 void pauseframe() {
     pausestate();
     waitForVBlank();
@@ -306,3 +375,4 @@ void pause() {
         startframe();
     }
 }
+
