@@ -12,12 +12,15 @@
 #include "bh1.h"
 #include "bhtm.h"
 #include "bh.h"
+#include "maze.h"
 #include "bathhouse.h"
+#include "train.h"
 
 unsigned short colors[8] = {RED, BROWN, BLUE, LIGHTBROWN, LIGHTBLUE, MAGENTA, WHITE, BLACK};
 
-enum {START, GAME1, GAME2, INST, PAUSE};
-int state;
+enum {START, GAME1, GAME2, GAME3, INST, PAUSE};
+int state; int prevstate;
+int intro = 0;
 void initialize(); void update(); void draw(); 
 void startframe(); void start(); void game1(); void game1frame();
 int hOff; int vOff; int rSeed;
@@ -56,6 +59,7 @@ int main() {
                     state = START; 
                 }
                 if (BUTTON_PRESSED(BUTTON_START)) {
+                    prevstate = GAME1;
                     initialize4();
                     pauseframe();
                     state = PAUSE;
@@ -63,24 +67,38 @@ int main() {
                 break;
             case BH:
                 bh();
+                if (BUTTON_PRESSED(BUTTON_SELECT)) {
+                    initialize4();
+                    state = START; 
+                }
                 if (BUTTON_PRESSED(BUTTON_START)) {
                     prevstate = BH;
-                    initialize0();
+                    initialize4();
                     pauseframe();
                     state = PAUSE;
-                }
-                if (BUTTON_PRESSED(BUTTON_SELECT)) {
-                    prevstate = BH;
-                    initialize0();
-                    game2frame();
-                    state = GAME2;
                 }
                 break;
             case GAME2:
                 game2();
+                if (BUTTON_PRESSED(BUTTON_SELECT)) {
+                    initialize4();
+                    state = START; 
+                }
                 if (BUTTON_PRESSED(BUTTON_START)) {
                     prevstate = GAME2;
-                    initialize0();
+                    initialize4();
+                    pauseframe();
+                    state = PAUSE;
+                }
+            case GAME3:
+                game3();
+                if (BUTTON_PRESSED(BUTTON_SELECT)) {
+                    initialize4();
+                    state = START; 
+                }
+                if (BUTTON_PRESSED(BUTTON_START)) {
+                    prevstate = GAME3;
+                    initialize4();
                     pauseframe();
                     state = PAUSE;
                 }
@@ -234,6 +252,42 @@ void game2() {
         return;
     }
 
+}
+
+void game3frame() {
+    initialize0();
+
+    REG_BG0CNT = BG_CHARBLOCK(0) | BG_SCREENBLOCK(22) | BG_SIZE_LARGE | BG_8BPP;
+    DMANow(3, tilesetTiles, &CHARBLOCK[0], tilesetTilesLen/2);
+    DMANow(3, mazeMap, &SCREENBLOCK[22], mazeMapLen/2);
+    DMANow(3, tilesetPal, BG_PALETTE, 256);
+
+    // Loading sprites into appropriate place in memory
+    DMANow(3, chiriroTiles, &CHARBLOCK[4], chiriroTilesLen/2);
+    DMANow(3, chiriroPal, SPRITE_PAL, 256);
+    hideSprites();
+    DMANow(3, shadowOAM, OAM, 512);
+
+    hOff = 0;
+    vOff = 0;
+    initGame3();
+    state = GAME3;
+}
+
+void game3() {
+    updateGame3();
+    waitForVBlank();
+    drawGame3();
+    DMANow(3, shadowOAM, OAM, 128*4);
+    if (BUTTON_PRESSED(BUTTON_START)) {
+        pauseframe();
+        return;
+    }
+    if (intro == 4) {
+        game1frame();
+        return;
+        playAnalogSound(0);
+    }
 }
 
 void pauseframe() {
