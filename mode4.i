@@ -26,13 +26,14 @@ typedef void (*ihp)(void);
 
 
 
+
 extern volatile unsigned short *videoBuffer;
-# 44 "gba.h"
+# 45 "gba.h"
 int collision(int x1, int y1, int width1, int height1, int x2, int y2, int width2, int height2);
 
 
 void waitForVBlank();
-# 63 "gba.h"
+# 79 "gba.h"
 extern unsigned short oldButtons;
 extern unsigned short buttons;
 
@@ -44,7 +45,7 @@ typedef volatile struct {
     volatile void* dest;
     unsigned int ctrl;
 } DMAChannel;
-# 97 "gba.h"
+# 113 "gba.h"
 void DMANow(int channel, volatile void *src, volatile void *dest, unsigned int ctrl);
 # 5 "mode4.h" 2
 
@@ -108,6 +109,23 @@ void fillScreen4(volatile unsigned char colorIndex) {
 void drawImage4(int x, int y, int width, int height, const unsigned short *image) {
     for (int i = 0; i < height; i++) {
         DMANow(3, &image[((i) * (width / 2) + (0))], &videoBuffer[((y + i) * (240) + (x)) / 2], width / 2);
+    }
+}
+
+void drawCircle4(int x, int y, int radius, unsigned char colorIndex) {
+    for (int r = -radius; r <= radius; r++) {
+        for (int c = -radius; c <= radius; c++) {
+            if (r * r + c * c <= radius * radius) {
+                setPixel4(x + c, y + r, colorIndex);
+            }
+        }
+    }
+}
+
+void drawParabola4(int x, int y, int a, int b, int c, unsigned char colorIndex) {
+    for (int i = -a; i <= a; i++) {
+        int j = (b * i * i + c) / 2;
+        setPixel4(x + i, y + j, colorIndex);
     }
 }
 

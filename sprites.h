@@ -18,6 +18,35 @@ typedef struct {
 #define OAM ((OBJ_ATTR*)(0x7000000))
 extern OBJ_ATTR shadowOAM[128];
 
+struct attr0 {
+  u16 regular;       // Normal Rendering (default)
+  u16 affine;        // Affine Rendering
+  u16 hide;          // Hidden
+  u16 double_affine; // Double Affine Rendering
+  u16 enable_alpha;  // Enable Alpha Blending
+  u16 enable_window; // Object Window Mode (see GBATek)
+  u16 enable_mosaic; // Enable Mosaic Effect
+  u16 fourBpp;       // 4 Bits Per Pixel (default)
+  u16 eightBpp;      // 8 Bits Per Pixel
+  u16 square;        // Square Shape (default)
+  u16 wide;          // Wide Shape
+  u16 tall;          // Tall Shape
+};
+
+struct attr1 {
+  u16 hflip;  // Flip horizontally
+  u16 vflip;  // Flip Vertically
+  u16 tiny;   // See Size Chart
+  u16 small;  // See Size Chart
+  u16 medium; // See Size Chart
+  u16 large;  // See Size Chart
+};
+
+struct oam_attrs {
+  struct attr0 attr0;
+  struct attr1 attr1;
+};
+
 // OAM Attributes
 // Attribute 0
 #define ATTR0_Y(y)         ((y) & 0xFF) // Bits 0-7: Y coordinate

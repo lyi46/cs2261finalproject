@@ -52,6 +52,23 @@ void drawImage4(int x, int y, int width, int height, const unsigned short *image
     }
 }
 
+void drawCircle4(int x, int y, int radius, unsigned char colorIndex) {
+    for (int r = -radius; r <= radius; r++) {
+        for (int c = -radius; c <= radius; c++) {
+            if (r * r + c * c <= radius * radius) {
+                setPixel4(x + c, y + r, colorIndex);
+            }
+        }
+    }
+}
+
+void drawParabola4(int x, int y, int a, int b, int c, unsigned char colorIndex) {
+    for (int i = -a; i <= a; i++) {
+        int j = (b * i * i + c) / 2;
+        setPixel4(x + i, y + j, colorIndex);
+    }
+}
+
 // Draws a full-screen image in mode 4
 void drawFullscreenImage4(const unsigned short *image) {
     DMANow(3, image, videoBuffer, SCREENWIDTH * SCREENHEIGHT / 2);

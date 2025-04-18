@@ -267,6 +267,93 @@ drawImage4:
 	.word	DMANow
 	.size	drawImage4, .-drawImage4
 	.align	2
+	.global	drawCircle4
+	.syntax unified
+	.arm
+	.fpu softvfp
+	.type	drawCircle4, %function
+drawCircle4:
+	@ Function supports interworking.
+	@ args = 0, pretend = 0, frame = 8
+	@ frame_needed = 0, uses_anonymous_args = 0
+	push	{r4, r5, r6, r7, r8, r9, r10, fp, lr}
+	rsb	r8, r2, #0
+	sub	sp, sp, #12
+	cmp	r2, r8
+	str	r8, [sp, #4]
+	blt	.L43
+	mov	r9, r0
+	mov	fp, r3
+	mul	r7, r2, r2
+	sub	r10, r1, r2
+	add	r5, r2, #1
+.L45:
+	mul	r6, r8, r8
+	ldr	r4, [sp, #4]
+	b	.L47
+.L46:
+	add	r4, r4, #1
+	cmp	r4, r5
+	beq	.L50
+.L47:
+	mla	ip, r4, r4, r6
+	cmp	ip, r7
+	bgt	.L46
+	add	r0, r4, r9
+	mov	r2, fp
+	mov	r1, r10
+	add	r4, r4, #1
+	bl	setPixel4
+	cmp	r4, r5
+	bne	.L47
+.L50:
+	add	r8, r8, #1
+	cmp	r8, r5
+	add	r10, r10, #1
+	bne	.L45
+.L43:
+	add	sp, sp, #12
+	@ sp needed
+	pop	{r4, r5, r6, r7, r8, r9, r10, fp, lr}
+	bx	lr
+	.size	drawCircle4, .-drawCircle4
+	.align	2
+	.global	drawParabola4
+	.syntax unified
+	.arm
+	.fpu softvfp
+	.type	drawParabola4, %function
+drawParabola4:
+	@ Function supports interworking.
+	@ args = 8, pretend = 0, frame = 0
+	@ frame_needed = 0, uses_anonymous_args = 0
+	push	{r3, r4, r5, r6, r7, r8, r9, r10, fp, lr}
+	rsb	r4, r2, #0
+	cmp	r2, r4
+	ldr	r10, [sp, #40]
+	ldrb	fp, [sp, #44]	@ zero_extendqisi2
+	blt	.L51
+	mov	r8, r0
+	mov	r9, r1
+	mov	r7, r3
+	mul	r5, r3, r4
+	add	r6, r2, #1
+.L53:
+	mla	r1, r4, r5, r10
+	add	r1, r1, r1, lsr #31
+	add	r0, r4, r8
+	mov	r2, fp
+	add	r1, r9, r1, asr #1
+	add	r4, r4, #1
+	bl	setPixel4
+	cmp	r4, r6
+	add	r5, r5, r7
+	bne	.L53
+.L51:
+	pop	{r3, r4, r5, r6, r7, r8, r9, r10, fp, lr}
+	bx	lr
+	.size	drawParabola4, .-drawParabola4
+	.align	2
 	.global	drawFullscreenImage4
 	.syntax unified
 	.arm
@@ -277,19 +364,19 @@ drawFullscreenImage4:
 	@ args = 0, pretend = 0, frame = 0
 	@ frame_needed = 0, uses_anonymous_args = 0
 	push	{r4, lr}
-	ldr	r3, .L45
+	ldr	r3, .L58
 	mov	r1, r0
 	ldr	r2, [r3]
-	ldr	r4, .L45+4
+	ldr	r4, .L58+4
 	mov	r3, #19200
 	mov	r0, #3
 	mov	lr, pc
 	bx	r4
 	pop	{r4, lr}
 	bx	lr
-.L46:
+.L59:
 	.align	2
-.L45:
+.L58:
 	.word	videoBuffer
 	.word	DMANow
 	.size	drawFullscreenImage4, .-drawFullscreenImage4
@@ -307,17 +394,17 @@ flipPages:
 	mov	r3, #67108864
 	ldrh	r1, [r3]
 	tst	r1, #16
-	ldr	r2, .L50
+	ldr	r2, .L63
 	moveq	r2, #100663296
-	ldr	r1, .L50+4
+	ldr	r1, .L63+4
 	str	r2, [r1]
 	ldrh	r2, [r3]
 	eor	r2, r2, #16
 	strh	r2, [r3]	@ movhi
 	bx	lr
-.L51:
+.L64:
 	.align	2
-.L50:
+.L63:
 	.word	100704256
 	.word	videoBuffer
 	.size	flipPages, .-flipPages

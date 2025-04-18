@@ -10,8 +10,12 @@ int hOff;
 int vOff;
 
 SPRITE player;
+SPRITE baby;
 typedef enum {DOWN, UP, LEFT, RIGHT} DIRECTION;
 OBJ_ATTR shadowOAM[128];
+int intro;
+int g2sw = 240;
+int g2sh = 512;
 
 inline unsigned char colorAt(int x, int y){
     // return ((unsigned char * ) collisionBitmap) [OFFSET(x, y, MAPWIDTH)];
@@ -21,18 +25,20 @@ void initGame2(){
     DMANow(3, shadowOAM, OAM, 128*4);
 
     
-    initPlayer();
+    initPlayer2();
+    initBaby();
     hOff = 0;
     vOff = 0;
 }
 
 void updateGame2(){
-    updatePlayer();
+    updatePlayer2();
 }
 
 void drawGame2(){
     hideSprites();
-    drawPlayer();
+    drawPlayer2();
+    drawBaby();
     waitForVBlank();
     DMANow(3, shadowOAM, OAM, 128*4);
 }
@@ -41,8 +47,8 @@ void drawGame2(){
 void initPlayer2(){
     player.width = 16;
     player.height = 32;
-    player.x = 45;
-    player.y = 420;
+    player.x = 112;
+    player.y = 70;
     player.numFrames = 3;
     player.timeUntilNextFrame = 10;
     player.xVel = 3;
@@ -62,35 +68,38 @@ void drawPlayer2() {
     REG_BG0VOFF = vOff;
 }
 
-// Handle every-frame actions of player
 void updatePlayer2() {
-    int leftX = player.x;
-    int rightX = player.x + player.width - 1;
-    int topY = player.y;
-    int bottomY = player.y + player.height - 1;
     player.isAnimating = 0;
 
+    // Move up
     if (BUTTON_HELD(BUTTON_UP) && player.y > 0) {
         player.y -= player.yVel;
         player.isAnimating = 1;
         player.direction = UP;
     }
-    if (BUTTON_HELD(BUTTON_DOWN) && player.y + player.height < MAPHEIGHT) {
+
+    // Move down
+    if (BUTTON_HELD(BUTTON_DOWN) && player.y + player.height < g2sh) { // Check against g2sh
         player.y += player.yVel;
         player.isAnimating = 1;
         player.direction = DOWN;
     }
+
+    // Move left
     if (BUTTON_HELD(BUTTON_LEFT) && player.x > 0) {
         player.x -= player.xVel;
         player.isAnimating = 1;
         player.direction = LEFT;
     }
-    if (BUTTON_HELD(BUTTON_RIGHT) && player.x + player.width < MAPWIDTH) {
+
+    // Move right
+    if (BUTTON_HELD(BUTTON_RIGHT) && player.x + player.width < g2sw) { // Check against g2sw
         player.x += player.xVel;
         player.isAnimating = 1;
         player.direction = RIGHT;
     }
 
+    // Handle animation frames
     if (player.isAnimating) {
         player.timeUntilNextFrame--;
         if (player.timeUntilNextFrame == 0) {
@@ -100,17 +109,40 @@ void updatePlayer2() {
     } else {
         player.currentFrame = 0;
     }
-
-    hOff = 0;
     vOff = player.y - SCREENHEIGHT/2;
 
-    if (vOff > MAPHEIGHT - SCREENHEIGHT) {
-        vOff = MAPHEIGHT - SCREENHEIGHT;
+    if (vOff > g2sh - SCREENHEIGHT) {
+        vOff = g2sh - SCREENHEIGHT;
     }
     if (vOff < 0) {
         vOff = 0;
     }
+    if (player.x >= g2sw - player.width) {
+        player.x = g2sw - player.width;
+    }
     if (collision(player.x, player.y, player.width, player.height, 105, 500, 30, 30)) {
         intro = 3;
     }
+}
+
+void drawBaby() {
+    shadowOAM[5].attr0 = ATTR0_Y(baby.y - vOff) | ATTR0_TALL | ATTR0_4BPP | ATTR0_REGULAR;
+    shadowOAM[5].attr1 = ATTR1_X(baby.x - hOff) | ATTR1_LARGE | (baby.direction == LEFT ? ATTR1_HFLIP : 0);
+    shadowOAM[5].attr2 = ATTR2_TILEID(0, 16);
+
+    REG_BG0HOFF = 0;
+    REG_BG0VOFF = vOff;
+}
+
+void initBaby() {
+    baby.width = 32;
+    baby.height = 32;
+    baby.x = 104;
+    baby.y = 0;
+    baby.numFrames = 3;
+    baby.timeUntilNextFrame = 10;
+    baby.xVel = 3;
+    baby.yVel = 3;
+    baby.oamIndex = 5;
+    baby.active = 1;
 }

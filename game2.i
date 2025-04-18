@@ -351,16 +351,19 @@ extern const unsigned short chiriroPal[256];
 
 
 
-extern const unsigned short bathhouseMap[1024];
+extern const unsigned short bathhouseMap[2048];
 # 8 "game2.c" 2
 
 int hOff;
 int vOff;
 
 SPRITE player;
+SPRITE baby;
 typedef enum {DOWN, UP, LEFT, RIGHT} DIRECTION;
 OBJ_ATTR shadowOAM[128];
 int intro;
+int g2sw = 240;
+int g2sh = 512;
 
 inline unsigned char colorAt(int x, int y){
 
@@ -370,18 +373,20 @@ void initGame2(){
     DMANow(3, shadowOAM, ((OBJ_ATTR*)(0x7000000)), 128*4);
 
 
-    initPlayer();
+    initPlayer2();
+    initBaby();
     hOff = 0;
     vOff = 0;
 }
 
 void updateGame2(){
-    updatePlayer();
+    updatePlayer2();
 }
 
 void drawGame2(){
     hideSprites();
-    drawPlayer();
+    drawPlayer2();
+    drawBaby();
     waitForVBlank();
     DMANow(3, shadowOAM, ((OBJ_ATTR*)(0x7000000)), 128*4);
 }
@@ -390,8 +395,8 @@ void drawGame2(){
 void initPlayer2(){
     player.width = 16;
     player.height = 32;
-    player.x = 45;
-    player.y = 420;
+    player.x = 112;
+    player.y = 70;
     player.numFrames = 3;
     player.timeUntilNextFrame = 10;
     player.xVel = 3;
@@ -400,35 +405,48 @@ void initPlayer2(){
     player.active = 1;
 }
 
+void drawPlayer2() {
+    shadowOAM[0].attr0 = ((player.y - vOff) & 0xFF) | (2<<14) | (0<<13) | (0<<8);
+    shadowOAM[0].attr1 = ((player.x - hOff) & 0x1FF) | (2<<14) | (player.direction == LEFT ? (1<<12) : 0);
+    shadowOAM[0].attr2 = ((((player.currentFrame * 4) * (32) + (player.direction * 2))) & 0x3FF);
+    shadowOAM[player.oamIndex].attr0=((player.y - vOff) & 0xFF) | (2<<14);
+    shadowOAM[player.oamIndex].attr1=((player.x - hOff) & 0x1FF) | (2<<14);
 
+    (*(volatile unsigned short*) 0x04000010) = 0;
+    (*(volatile unsigned short*) 0x04000012) = vOff;
+}
 
 void updatePlayer2() {
-    int leftX = player.x;
-    int rightX = player.x + player.width - 1;
-    int topY = player.y;
-    int bottomY = player.y + player.height - 1;
     player.isAnimating = 0;
+
 
     if ((~(buttons) & ((1<<6))) && player.y > 0) {
         player.y -= player.yVel;
         player.isAnimating = 1;
         player.direction = UP;
     }
-    if ((~(buttons) & ((1<<7))) && player.y + player.height < 512) {
+
+
+    if ((~(buttons) & ((1<<7))) && player.y + player.height < g2sh) {
         player.y += player.yVel;
         player.isAnimating = 1;
         player.direction = DOWN;
     }
+
+
     if ((~(buttons) & ((1<<5))) && player.x > 0) {
         player.x -= player.xVel;
         player.isAnimating = 1;
         player.direction = LEFT;
     }
-    if ((~(buttons) & ((1<<4))) && player.x + player.width < 512) {
+
+
+    if ((~(buttons) & ((1<<4))) && player.x + player.width < g2sw) {
         player.x += player.xVel;
         player.isAnimating = 1;
         player.direction = RIGHT;
     }
+
 
     if (player.isAnimating) {
         player.timeUntilNextFrame--;
@@ -439,33 +457,40 @@ void updatePlayer2() {
     } else {
         player.currentFrame = 0;
     }
-
-    hOff = 0;
     vOff = player.y - 160/2;
 
-    if (vOff > 512 - 160) {
-        vOff = 512 - 160;
+    if (vOff > g2sh - 160) {
+        vOff = g2sh - 160;
     }
     if (vOff < 0) {
         vOff = 0;
     }
-
-
-
-
-
-
+    if (player.x >= g2sw - player.width) {
+        player.x = g2sw - player.width;
+    }
+    if (collision(player.x, player.y, player.width, player.height, 105, 500, 30, 30)) {
+        intro = 3;
+    }
 }
 
+void drawBaby() {
+    shadowOAM[5].attr0 = ((baby.y - vOff) & 0xFF) | (2<<14) | (0<<13) | (0<<8);
+    shadowOAM[5].attr1 = ((baby.x - hOff) & 0x1FF) | (3<<14) | (baby.direction == LEFT ? (1<<12) : 0);
+    shadowOAM[5].attr2 = ((((16) * (32) + (0))) & 0x3FF);
 
-
-void drawPlayer2() {
-    shadowOAM[0].attr0 = ((player.y - vOff) & 0xFF) | (2<<14) | (0<<13) | (0<<8);
-    shadowOAM[0].attr1 = ((player.x - hOff) & 0x1FF) | (2<<14) | (player.direction == LEFT ? (1<<12) : 0);
-    shadowOAM[0].attr2 = ((((player.currentFrame * 4) * (32) + (player.direction * 2))) & 0x3FF);
-    shadowOAM[player.oamIndex].attr0=((player.y - vOff) & 0xFF) | (2<<14);
-    shadowOAM[player.oamIndex].attr1=((player.x - hOff) & 0x1FF) | (2<<14);
-
-    (*(volatile unsigned short*) 0x04000010) = hOff;
+    (*(volatile unsigned short*) 0x04000010) = 0;
     (*(volatile unsigned short*) 0x04000012) = vOff;
+}
+
+void initBaby() {
+    baby.width = 32;
+    baby.height = 32;
+    baby.x = 104;
+    baby.y = 0;
+    baby.numFrames = 3;
+    baby.timeUntilNextFrame = 10;
+    baby.xVel = 3;
+    baby.yVel = 3;
+    baby.oamIndex = 5;
+    baby.active = 1;
 }

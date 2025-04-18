@@ -12,6 +12,7 @@ typedef signed long long s64;
 typedef unsigned long long u64;
 typedef void (*ihp)(void); // Interrupt handler function pointer
 
+
 // Display constants
 #define SCREENHEIGHT 160 // Height of the GBA display
 #define SCREENWIDTH  240 // Width of the GBA display
